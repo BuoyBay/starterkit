@@ -1,0 +1,125 @@
+''' A receiver explicitly subscribed to one or more exact topic names.
+Public Interface TopicSubscriber
+    Sub ReceiveTopic(topic As String, payload As String)
+End Interface
+
+Private Class StarterSubscription
+    Public Property Token As Integer
+    Public Property Topic As String
+    Public Property Receiver As TopicSubscriber
+    Public Property Active As Boolean = True
+End Class
+
+''' An owner-bound subscription. The handle never keeps its TopicBus alive.
+Public Class TopicSubscription
+    Private Property mOwner As Weak TopicBus
+    Private Property mToken As Integer
+
+    Public Sub Constructor(owner As TopicBus, topic As String, receiver As TopicSubscriber)
+        If owner Is Nil Then Throw New InvalidArgumentException("A subscription owner is required")
+        mToken = owner.Subscribe(topic, receiver)
+        mOwner = owner
+    End Sub
+
+    Public Property IsActive As Boolean
+        Get
+            Dim owner As TopicBus = mOwner
+            If owner Is Nil Then Return False
+            Return owner.IsSubscribed(mToken)
+        End Get
+    End Property
+
+    Public Sub Dispose()
+        Dim owner As TopicBus = mOwner
+        mOwner = Nil
+        If owner IsNot Nil Then owner.Unsubscribe(mToken)
+    End Sub
+
+    Public Sub Destructor()
+        Me.Dispose()
+    End Sub
+End Class
+
+''' Synchronous, ordered, explicitly owned topic subscriptions. Not thread safe.
+Public Class TopicBus
+    Private Property mEntries As Array Of StarterSubscription = []
+    Private Property mNextToken As Integer = 1
+    Private Property mDepth As Integer = 0
+
+    Public Function Subscribe(topic As String, receiver As TopicSubscriber) As Integer
+        If String.Len(topic) = 0 Or receiver Is Nil Then
+            Throw New InvalidArgumentException("A nonempty topic and receiver are required")
+        End If
+        If mNextToken = 9223372036854775807 Then
+            Throw New InvalidArgumentException("Subscription token space exhausted")
+        End If
+        Dim entry As New StarterSubscription()
+        entry.Token = mNextToken
+        entry.Topic = topic
+        entry.Receiver = receiver
+        Array.Append(mEntries, entry)
+        mNextToken += 1
+        Return entry.Token
+    End Function
+
+    Public Function Unsubscribe(token As Integer) As Boolean
+        For i As Integer = 0 To Array.Count(mEntries) - 1
+            Dim entry As StarterSubscription = mEntries(i)
+            If entry.Token = token Then
+                entry.Active = False
+                Array.RemoveAt(mEntries, i)
+                entry.Receiver = Nil
+                Return True
+            End If
+        Next
+        Return False
+    End Function
+
+    Public Function SubscribeScoped(topic As String, receiver As TopicSubscriber) As TopicSubscription
+        Return New TopicSubscription(Me, topic, receiver)
+    End Function
+
+    Public Function IsSubscribed(token As Integer) As Boolean
+        For Each entry As StarterSubscription In mEntries
+            If entry.Token = token Then Return entry.Active
+        Next
+        Return False
+    End Function
+
+    Public Sub Clear()
+        ' Detach registrations before releasing receivers: destructors may reenter.
+        Dim retired As Array Of StarterSubscription = Array.Clone(mEntries)
+        Array.Clear(mEntries)
+        For Each entry As StarterSubscription In retired
+            entry.Active = False
+        Next
+        For Each entry As StarterSubscription In retired
+            entry.Receiver = Nil
+        Next
+    End Sub
+
+    Public Function SubscriptionCount() As Integer
+        Return Array.Count(mEntries)
+    End Function
+
+    Public Sub Publish(topic As String, payload As String = "")
+        If String.Len(topic) = 0 Then
+            Throw New InvalidArgumentException("A nonempty topic is required")
+        End If
+        If mDepth >= 32 Then
+            Throw New InvalidArgumentException("TopicBus nested publish limit is 32")
+        End If
+        Dim snapshot As Array Of StarterSubscription = Array.Clone(mEntries)
+        mDepth += 1
+        Try
+            For Each entry As StarterSubscription In snapshot
+                If entry.Active And String.Compare(entry.Topic, topic, True) = 0 Then
+                    Dim receiver As TopicSubscriber = entry.Receiver
+                    receiver.ReceiveTopic(topic, payload)
+                End If
+            Next
+        Finally
+            mDepth -= 1
+        End Try
+    End Sub
+End Class
