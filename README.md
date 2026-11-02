@@ -1,4 +1,4 @@
-# In-process topic bus (pub/sub)
+# In-process pub/sub
 
 `Import starterkit` adds a synchronous, ordered application-model topic bus.
 This is an independent implementation prompted by KitchenSink's Notifications
