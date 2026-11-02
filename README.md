@@ -1,4 +1,4 @@
-# Publish and subscribe to application topics
+# In-process topic bus (pub/sub)
 
 `Import starterkit` adds a synchronous, ordered application-model topic bus.
 This is an independent implementation prompted by KitchenSink's Notifications
@@ -24,7 +24,7 @@ consumer project for reproducible installs.
 
 ## Example
 
-```buoy
+```basic
 Import starterkit
 
 Class StatusPanel Implements TopicSubscriber

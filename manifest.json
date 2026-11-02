@@ -1,1 +1,1 @@
-{"schema":1,"name":"starterkit","version":"0.1.0","description":"Explicit synchronous topic subscriptions for Buoy desktop application models"}
+{"schema":1,"name":"starterkit","version":"0.1.0","description":"In-process topic bus (pub/sub)"}
