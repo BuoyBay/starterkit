@@ -70,7 +70,3 @@ its bus, the existing bus/receiver cycle still requires explicit disposal or
 explicit disposal/clear; its handle cannot be destroyed first to break that chain.
 Handle methods and destruction must follow the same single-thread access rule as
 the bus. No cross-thread dispatch or thread-safe lifetime guarantee is added.
-
-Maintainers run the private validation suite before release. See the repository README for public build instructions.
-
-Maintainers run the private validation suite before release. See the repository README for public build instructions.

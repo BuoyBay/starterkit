@@ -2,7 +2,7 @@
 
 `Import starterkit` adds a synchronous, ordered application-model topic bus.
 This is an independent implementation prompted by KitchenSink's Notifications
-component. It complements Buoy's inheritance-based single-cast Events; it does
+component. It complements inheritance-based single-cast Events; it does
 not deliver system notifications or use the `notifications` package.
 
 Implement `TopicSubscriber.ReceiveTopic(topic As String, payload As String)`.
@@ -71,8 +71,6 @@ On your own machine, install Buoy and run:
 ```sh
 buoy ai init --both
 ```
-
-The generated agent files and editor settings stay local and are ignored by Git.
 
 ## Contributing
 
